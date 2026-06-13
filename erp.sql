@@ -358,3 +358,352 @@ CREATE TABLE employee_sessions (
 
     created_at TIMESTAMP DEFAULT NOW()
 ); 
+
+CREATE TABLE account_types (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    type_key VARCHAR(30) UNIQUE NOT NULL,
+    -- customer / supplier / expense / revenue / asset / liability
+
+    description TEXT,
+
+    is_system BOOLEAN DEFAULT FALSE,
+
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE accounts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    owner_id UUID NOT NULL
+        REFERENCES ownerusers(id)
+        ON DELETE CASCADE,
+
+    shop_id UUID NOT NULL
+        REFERENCES shops(id)
+        ON DELETE CASCADE,
+
+    account_type_id UUID NOT NULL
+        REFERENCES account_types(id)
+        ON DELETE RESTRICT,
+
+    created_by_employee_id UUID
+        REFERENCES employees(id)
+        ON DELETE SET NULL,
+
+    account_code VARCHAR(30) UNIQUE,
+
+    accounts_image TEXT,
+
+
+    name VARCHAR(150) NOT NULL,
+
+    phone VARCHAR(20),
+    email VARCHAR(150),
+
+    nid_number VARCHAR(50),
+
+    company_name VARCHAR(150),
+
+    address TEXT,
+    city VARCHAR(100),
+    state VARCHAR(100),
+    country VARCHAR(100) DEFAULT 'Bangladesh',
+
+    opening_balance NUMERIC(12,2) DEFAULT 0,
+    current_balance NUMERIC(12,2) DEFAULT 0,
+
+    is_active BOOLEAN DEFAULT TRUE,
+
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+
+CREATE TABLE account_ledger (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    account_id UUID NOT NULL
+        REFERENCES accounts(id)
+        ON DELETE CASCADE,
+
+    shop_id UUID NOT NULL
+        REFERENCES shops(id)
+        ON DELETE CASCADE,
+
+    reference_type VARCHAR(30) NOT NULL,
+    -- sale / purchase / payment / invoice / expense / income / return
+
+    reference_id UUID,
+
+    debit NUMERIC(12,2) DEFAULT 0,
+    credit NUMERIC(12,2) DEFAULT 0,
+
+    balance NUMERIC(12,2) NOT NULL,
+
+    description TEXT,
+
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE supplier_due_summary (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    account_id UUID NOT NULL
+        REFERENCES accounts(id)
+        ON DELETE CASCADE,
+
+    total_purchase NUMERIC(12,2) DEFAULT 0,
+    paid_amount NUMERIC(12,2) DEFAULT 0,
+
+    due_amount NUMERIC(12,2) GENERATED ALWAYS AS (total_purchase - paid_amount) STORED,
+
+    status VARCHAR(20) DEFAULT 'due'
+    CHECK (status IN ('due','partial','paid')),
+
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE payments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    account_id UUID NOT NULL
+        REFERENCES accounts(id)
+        ON DELETE CASCADE,
+
+    shop_id UUID NOT NULL
+        REFERENCES shops(id)
+        ON DELETE CASCADE,
+
+    payment_type VARCHAR(20) NOT NULL,
+    -- customer_payment / supplier_payment / expense
+
+    amount NUMERIC(12,2) NOT NULL,
+
+    method VARCHAR(20) DEFAULT 'cash'
+    -- cash / bank / mobile
+
+        CHECK (method IN ('cash','bank','mobile')),
+
+    reference_no VARCHAR(100),
+
+    created_by_employee_id UUID
+        REFERENCES employees(id)
+        ON DELETE SET NULL,
+
+    payment_date DATE NOT NULL,
+
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE audit_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    shop_id UUID NOT NULL
+        REFERENCES shops(id)
+        ON DELETE CASCADE,
+
+    employee_id UUID
+        REFERENCES employees(id)
+        ON DELETE SET NULL,
+
+    action VARCHAR(100) NOT NULL,
+    -- create / update / delete / approve
+
+    entity VARCHAR(100),
+    -- accounts / sales / purchase / payment
+
+    entity_id UUID,
+
+    description TEXT,
+
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE sales_orders (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    shop_id UUID NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
+
+    account_id UUID NOT NULL REFERENCES accounts(id) ON DELETE RESTRICT,
+
+    created_by_employee_id UUID REFERENCES employees(id) ON DELETE SET NULL,
+
+    order_number VARCHAR(50) UNIQUE NOT NULL,
+
+    order_date DATE NOT NULL,
+
+    total_amount NUMERIC(12,2) NOT NULL DEFAULT 0,
+    paid_amount NUMERIC(12,2) DEFAULT 0,
+    due_amount NUMERIC(12,2) GENERATED ALWAYS AS (total_amount - paid_amount) STORED,
+
+    discount_amount NUMERIC(12,2) DEFAULT 0,
+    tax_amount NUMERIC(12,2) DEFAULT 0,
+
+    status VARCHAR(20) NOT NULL DEFAULT 'draft'
+    CHECK (status IN ('draft','confirmed','delivered','cancelled','returned')),
+
+    notes TEXT,
+
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+CREATE TABLE sales_returns (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    shop_id UUID NOT NULL
+        REFERENCES shops(id)
+        ON DELETE CASCADE,
+
+    account_id UUID NOT NULL
+        REFERENCES accounts(id)
+        ON DELETE CASCADE,
+    -- customer account
+
+    sales_order_id UUID
+        REFERENCES sales_orders(id)
+        ON DELETE SET NULL,
+
+    return_date DATE NOT NULL,
+
+    total_amount NUMERIC(12,2) NOT NULL,
+
+    reason TEXT,
+
+    created_by_employee_id UUID
+        REFERENCES employees(id)
+        ON DELETE SET NULL,
+
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE sales_return_items (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    sales_return_id UUID NOT NULL
+        REFERENCES sales_returns(id)
+        ON DELETE CASCADE,
+
+    product_name VARCHAR(150),
+
+    quantity NUMERIC(12,2) NOT NULL,
+
+    unit_price NUMERIC(12,2) NOT NULL,
+
+    line_total NUMERIC(12,2) NOT NULL,
+
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE purchase_returns (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    shop_id UUID NOT NULL
+        REFERENCES shops(id)
+        ON DELETE CASCADE,
+
+    account_id UUID NOT NULL
+        REFERENCES accounts(id)
+        ON DELETE CASCADE,
+    -- supplier account
+
+    purchase_ref VARCHAR(50),
+
+    return_date DATE NOT NULL,
+
+    total_amount NUMERIC(12,2) NOT NULL,
+
+    reason TEXT,
+
+    created_by_employee_id UUID
+        REFERENCES employees(id)
+        ON DELETE SET NULL,
+
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE purchase_return_items (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    purchase_return_id UUID NOT NULL
+        REFERENCES purchase_returns(id)
+        ON DELETE CASCADE,
+
+    product_name VARCHAR(150),
+
+    quantity NUMERIC(12,2) NOT NULL,
+
+    unit_price NUMERIC(12,2) NOT NULL,
+
+    line_total NUMERIC(12,2) NOT NULL,
+
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE document_types (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    type_key VARCHAR(50) UNIQUE NOT NULL,
+    -- invoice / bill / receipt / contract / nid / return_slip / profile_image
+
+    description TEXT,
+
+    is_system BOOLEAN DEFAULT FALSE,
+
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+
+CREATE TABLE documents (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    owner_id UUID NOT NULL
+        REFERENCES ownerusers(id)
+        ON DELETE CASCADE,
+
+    shop_id UUID NOT NULL
+        REFERENCES shops(id)
+        ON DELETE CASCADE,
+
+    uploaded_by_employee_id UUID
+        REFERENCES employees(id)
+        ON DELETE SET NULL,
+
+    document_type_id UUID NOT NULL
+        REFERENCES document_types(id)
+        ON DELETE RESTRICT,
+
+    file_name VARCHAR(255) NOT NULL,
+    file_url TEXT NOT NULL,
+
+    file_type VARCHAR(100),
+    file_size INT,
+
+    is_deleted BOOLEAN DEFAULT FALSE,
+
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+
+CREATE TABLE document_links (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    document_id UUID NOT NULL
+        REFERENCES documents(id)
+        ON DELETE CASCADE,
+
+    shop_id UUID NOT NULL
+        REFERENCES shops(id)
+        ON DELETE CASCADE,
+
+    entity_type VARCHAR(30) NOT NULL,
+    -- sales_order / purchase_order / account / employee / ledger / supplier / customer
+
+    entity_id UUID NOT NULL,
+
+    purpose_id UUID
+        REFERENCES document_types(id)
+        ON DELETE SET NULL,
+
+    created_at TIMESTAMP DEFAULT NOW()
+);
