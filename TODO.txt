@@ -1,0 +1,14 @@
+1. Back End First Development Approach
+    - Database (pgSQL)
+    - API
+    - Postman
+    - Development (AWS serverless)
+
+2. Database Design & Testing
+    - Application Features & Requirement Lisiting 
+    - Data Flow Diagram (DFD)
+    - User Journey & Technical Flow
+    - Database Schema Ploanning 
+    - ERD Diagram & Relationship
+
+    
