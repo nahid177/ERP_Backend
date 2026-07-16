@@ -445,6 +445,7 @@ CREATE TABLE account_ledger (
 
     created_at TIMESTAMP DEFAULT NOW()
 );
+
 CREATE TABLE brands (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
@@ -1183,6 +1184,74 @@ CREATE TABLE voucher_logs (
     -- created / approved / updated / cancelled
 
     note TEXT,
+
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+
+CREATE TABLE cash_accounts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    shop_id UUID NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
+
+    account_name VARCHAR(100) NOT NULL,
+    -- Cash, Bank, Mobile Money, Bkash etc
+
+    account_type VARCHAR(20) NOT NULL,
+    -- cash / bank / mobile
+
+    balance NUMERIC(12,2) DEFAULT 0,
+
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE financial_transactions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    shop_id UUID NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
+    cash_account_id UUID NOT NULL REFERENCES cash_accounts(id),
+
+    transaction_type VARCHAR(30) NOT NULL,
+    -- income / expense / transfer / adjustment
+
+    amount NUMERIC(12,2) NOT NULL,
+
+    direction VARCHAR(10) NOT NULL,
+    -- IN / OUT
+
+    reference_type VARCHAR(50),
+    -- sales_order / purchase_order / salary / payment / voucher
+
+    reference_id UUID,
+
+    description TEXT,
+
+    created_by_employee_id UUID REFERENCES employees(id) ON DELETE SET NULL,
+
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE ledger_entries (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    shop_id UUID NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
+
+    cash_account_id UUID REFERENCES cash_accounts(id),
+
+    account_type VARCHAR(50) NOT NULL,
+    -- cash / receivable / payable / income / expense
+
+    reference_type VARCHAR(50),
+    -- sales_order / purchase_order / salary / payment / voucher
+
+    reference_id UUID,
+
+    debit NUMERIC(12,2) DEFAULT 0,
+    credit NUMERIC(12,2) DEFAULT 0,
+
+    description TEXT,
+
+    created_by_employee_id UUID REFERENCES employees(id) ON DELETE SET NULL,
 
     created_at TIMESTAMP DEFAULT NOW()
 );
