@@ -1,0 +1,55 @@
+{
+  "name": "backend-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ERP Backend API",
+
+  "type": "module",
+
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+
+    "build": "tsc",
+
+    "start": "node dist/server.js",
+
+    "deploy": "serverless deploy",
+
+    "remove": "serverless remove",
+
+    "prisma:generate": "prisma generate",
+
+    "prisma:migrate": "prisma migrate dev",
+
+    "prisma:studio": "prisma studio"
+  },
+
+  "dependencies": {
+    "@codegenie/serverless-express": "^5.0.0",
+    "@prisma/client": "^7.8.0",
+    "compression": "^1.8.1",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "helmet": "^8.3.0",
+    "pg": "^8.22.0",
+    "pino": "^10.3.1",
+    "pino-http": "^11.0.0",
+    "zod": "^4.4.3"
+  },
+
+  "devDependencies": {
+    "@types/compression": "^1.8.1",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.1.1",
+    "@types/pg": "^8.20.0",
+    "eslint": "^10.7.0",
+    "prettier": "^3.9.5",
+    "prisma": "^7.8.0",
+    "serverless": "^4.39.0",
+    "serverless-esbuild": "^1.57.2",
+    "tsx": "^4.23.1",
+    "typescript": "^7.0.2"
+  }
+}
